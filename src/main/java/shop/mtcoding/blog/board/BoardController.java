@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import shop.mtcoding.blog.user.User;
+import shop.mtcoding.blog.user.UserRequest;
 
 import java.awt.*;
 import java.util.List;
@@ -23,6 +24,27 @@ public class BoardController {
     private final BoardRepository boardRepository;
     private final HttpSession session;
 
+
+    @PostMapping("/board/{id}/delete")
+    public String delete(@PathVariable int id, HttpServletRequest request) {
+        // 바디 데이터 없어서 유효성 검사 안 해도 됨.
+        // 1. 인증 안 되면 나가
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if (sessionUser == null) {
+            return "redirect:/loginForm";
+        }
+        // 2. 권한 없으면 나가(포스트맨으로 때릴지도 모르니까)
+        Board board = boardRepository.findById(id);
+        if (board.getUserId() != sessionUser.getId()) {
+            request.setAttribute("status", 403);
+            request.setAttribute("msg", "게시글을 삭제할 권한이 없습니다");
+            return "error/40x";
+        }
+
+        // 3. 삭제
+        boardRepository.deleteById(id);
+        return "redirect:/";
+    }
 
     @PostMapping("/board/save")
     public String save(BoardRequest.SaveDTO requestDTO, HttpServletRequest request) {
@@ -75,12 +97,36 @@ public class BoardController {
 
     @GetMapping("/board/{id}")
     public String detail(@PathVariable int id, HttpServletRequest request) {
-        System.out.println("id : " + id);
+        // 1. 디테일 페이지 보려면 바디 데이터는 체크할 필요 없음, 권한도 체크할 필요 없음
+        BoardResponse.DetailDTO responseDTO = boardRepository.findByIdWithUser(id);
+
+        // 2. 페이지 주인 여부 체크(board의 userId와 sessionUser의 id를 비교)
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        boolean pageOwner = false;
+        System.out.println("로그인 아이디: " + sessionUser.getUsername());
+        System.out.println("글쓴이 아이디: " + responseDTO.getUsername());
+
+        System.out.println(sessionUser);
+        if (sessionUser == null) {
+            System.out.println("널안에있는거"+sessionUser);
+        } else if (responseDTO.getUsername()==sessionUser.getUsername()) {
+            pageOwner = true;
+//            System.out.println("로그인,글쓴이 아이디 같다: " + responseDTO.getUsername() == sessionUser.getUsername());
+//            System.out.println("pageOwner: " + pageOwner);
+        }
+
+
+//        if (sessionUser == null) {
+//            pageOwner = false;
+//        } else {
+//            pageOwner = responseDTO.getUsername().equals(sessionUser.getUsername());
+//            System.out.println(pageOwner);
+//        }
 
         // 바디 데이터가 없으면 유효성 검사가 필요없지 ㅎ
-        BoardResponse.DetailDTO responseDTO = boardRepository.findById(id);
 
         request.setAttribute("board", responseDTO);
+        request.setAttribute("pageOwner", pageOwner);
         return "board/detail";
     }
 }
