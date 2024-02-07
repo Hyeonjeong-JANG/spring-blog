@@ -23,26 +23,41 @@ public class BoardController {
     private final BoardRepository boardRepository;
     private final HttpSession session;
 
-    @GetMapping("/board/{id}/updateForm")
-    public String updateForm(@PathVariable int id, HttpServletRequest request) {
-        // 조인, 서브쿼리, 오더바이를 사용하면 서버의 부하가 높아진다.
-        // 1. 인증 안 되면 나가
+
+    @PostMapping("/board/{id}/update")
+    public String update(@PathVariable int id, BoardRequest.UpdateDTO requestDTO, HttpServletRequest request) {
         User sessionUser = (User) session.getAttribute("sessionUser");
         if (sessionUser == null) {
             return "redirect:/loginForm";
         }
 
-        // 모델 위임(id로 board를 조회) - 권한 체크를 하려면 대상이 필요해.
         Board board = boardRepository.findById(id);
-
-        // 2. 권한 없으면 나가
         if (board.getUserId() != sessionUser.getId()) {
-            return "error/403";
+            request.setAttribute("status", 403);
+            request.setAttribute("msg", "넌 구너한ㅇ니어 ㅄ다.");
+            return "error/40x";
         }
 
-        // 3. 원래 있던 글 가방에 담아 뿌리기 - 가방 이름 board
-        request.setAttribute("board", board);
+        boardRepository.update(requestDTO, id);
 
+        return "redirect:/board/" + id;
+    }
+
+    @GetMapping("/board/{id}/updateForm")
+    public String updateForm(@PathVariable int id, HttpServletRequest request) {
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if (sessionUser == null) {
+            return "redirect:/loginForm";
+        }
+
+        Board board = boardRepository.findById(id);
+        if (board.getUserId() != sessionUser.getId()) {
+            request.setAttribute("status", 403);
+            request.setAttribute("msg", "너는 권한이 없다");
+            return "error/40x";
+        }
+
+        request.setAttribute("board", board);
         return "board/updateForm";
     }
 
@@ -123,26 +138,14 @@ public class BoardController {
 
         // 2. 페이지 주인 여부 체크(board의 userId와 sessionUser의 id를 비교)
         User sessionUser = (User) session.getAttribute("sessionUser");
-        boolean pageOwner = false;
-        System.out.println("로그인 아이디: " + sessionUser.getUsername());
-        System.out.println("글쓴이 아이디: " + responseDTO.getUsername());
-
-        System.out.println(sessionUser);
+        boolean pageOwner=false;
         if (sessionUser == null) {
-            System.out.println("널안에있는거" + sessionUser);
+            pageOwner = false;
         } else if (responseDTO.getUsername() == sessionUser.getUsername()) {
-            pageOwner = true;
-//            System.out.println("로그인,글쓴이 아이디 같다: " + responseDTO.getUsername() == sessionUser.getUsername());
-//            System.out.println("pageOwner: " + pageOwner);
+            int writerId= responseDTO.getUserId();
+            int loginId=sessionUser.getId();
+            pageOwner = writerId == loginId;
         }
-
-
-//        if (sessionUser == null) {
-//            pageOwner = false;
-//        } else {
-//            pageOwner = responseDTO.getUsername().equals(sessionUser.getUsername());
-//            System.out.println(pageOwner);
-//        }
 
         // 바디 데이터가 없으면 유효성 검사가 필요없지 ㅎ
 
