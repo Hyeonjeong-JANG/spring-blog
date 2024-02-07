@@ -20,10 +20,31 @@ import java.util.List;
 @Controller
 public class BoardController {
 
-
     private final BoardRepository boardRepository;
     private final HttpSession session;
 
+    @GetMapping("/board/{id}/updateForm")
+    public String updateForm(@PathVariable int id, HttpServletRequest request) {
+        // 조인, 서브쿼리, 오더바이를 사용하면 서버의 부하가 높아진다.
+        // 1. 인증 안 되면 나가
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if (sessionUser == null) {
+            return "redirect:/loginForm";
+        }
+
+        // 모델 위임(id로 board를 조회) - 권한 체크를 하려면 대상이 필요해.
+        Board board = boardRepository.findById(id);
+
+        // 2. 권한 없으면 나가
+        if (board.getUserId() != sessionUser.getId()) {
+            return "error/403";
+        }
+
+        // 3. 원래 있던 글 가방에 담아 뿌리기 - 가방 이름 board
+        request.setAttribute("board", board);
+
+        return "board/updateForm";
+    }
 
     @PostMapping("/board/{id}/delete")
     public String delete(@PathVariable int id, HttpServletRequest request) {
@@ -108,8 +129,8 @@ public class BoardController {
 
         System.out.println(sessionUser);
         if (sessionUser == null) {
-            System.out.println("널안에있는거"+sessionUser);
-        } else if (responseDTO.getUsername()==sessionUser.getUsername()) {
+            System.out.println("널안에있는거" + sessionUser);
+        } else if (responseDTO.getUsername() == sessionUser.getUsername()) {
             pageOwner = true;
 //            System.out.println("로그인,글쓴이 아이디 같다: " + responseDTO.getUsername() == sessionUser.getUsername());
 //            System.out.println("pageOwner: " + pageOwner);
