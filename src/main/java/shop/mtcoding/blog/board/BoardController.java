@@ -27,9 +27,6 @@ public class BoardController {
     @PostMapping("/board/{id}/update")
     public String update(@PathVariable int id, BoardRequest.UpdateDTO requestDTO, HttpServletRequest request) {
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/loginForm";
-        }
 
         Board board = boardRepository.findById(id);
         if (board.getUserId() != sessionUser.getId()) {
@@ -46,9 +43,6 @@ public class BoardController {
     @GetMapping("/board/{id}/updateForm")
     public String updateForm(@PathVariable int id, HttpServletRequest request) {
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/loginForm";
-        }
 
         Board board = boardRepository.findById(id);
         if (board.getUserId() != sessionUser.getId()) {
@@ -66,9 +60,7 @@ public class BoardController {
         // 바디 데이터 없어서 유효성 검사 안 해도 됨.
         // 1. 인증 안 되면 나가
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/loginForm";
-        }
+
         // 2. 권한 없으면 나가(포스트맨으로 때릴지도 모르니까)
         Board board = boardRepository.findById(id);
         if (board.getUserId() != sessionUser.getId()) {
@@ -87,10 +79,6 @@ public class BoardController {
 
         // 1. 인증 체크
         User sessionUser = (User) session.getAttribute("sessionUser");
-
-        if (sessionUser == null) {
-            return "redirect:/loginForm";
-        }
 
         // 2. 바디 데이터 확인 및 유효성 검사
         log.info(requestDTO.toString());
@@ -125,9 +113,7 @@ public class BoardController {
 //       값이 null 이 아니면, /board/saveForm 으로 이동
     public String saveForm() {
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/loginForm";
-        }
+
         return "board/saveForm";
     }
 
