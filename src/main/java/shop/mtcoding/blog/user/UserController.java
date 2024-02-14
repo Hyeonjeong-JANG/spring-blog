@@ -13,7 +13,6 @@ import shop.mtcoding.blog._core.config.security.MyLoginUser;
 import shop.mtcoding.blog.board.Board;
 import shop.mtcoding.blog.board.BoardRepository;
 
-
 @RequiredArgsConstructor // final이 붙은 애들에 대한 생성자를 만들어줌
 @Controller
 public class UserController {
